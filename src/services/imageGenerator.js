@@ -5,7 +5,7 @@
  * @returns {Promise<string>} - The generated image as a data URL
  */
 export async function generateVisionBoardImage(prompt, size = 'desktop') {
-  const PROXY_URL = 'http://localhost:3001'
+  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-image`, {
@@ -102,7 +102,7 @@ export async function generateImagesParallel(goalPrompts, onProgress = () => { }
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateQuotes(visionType, goals) {
-  const PROXY_URL = 'http://localhost:3001'
+  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-quotes`, {
