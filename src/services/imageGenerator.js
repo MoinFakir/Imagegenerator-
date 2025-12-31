@@ -143,3 +143,46 @@ export async function generateQuotes(visionType, goals) {
   }
 }
 
+/**
+ * Generate personalized questions using Gemini based on vision type and goals
+ * @param {string} visionType - The selected vision type
+ * @param {Array} goals - Array of selected goals
+ * @returns {Promise<Array>} - Array of question strings
+ */
+export async function generateQuestions(visionType, goals) {
+  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
+
+  try {
+    const response = await fetch(`${PROXY_URL}/generate-questions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        visionType: visionType,
+        goals: goals
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.questions && data.questions.length > 0) {
+      return data.questions
+    }
+
+    // Fallback questions
+    return [
+      "What does success look like for you in this area?",
+      "How will achieving this goal change your life?",
+      "What steps are you most excited to take?"
+    ]
+  } catch (error) {
+    console.error('Question generation error:', error)
+    // Return fallback questions on error
+    return [
+      "What does success look like for you in this area?",
+      "How will achieving this goal change your life?",
+      "What steps are you most excited to take?"
+    ]
+  }
+}

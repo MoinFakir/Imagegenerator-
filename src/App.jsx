@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import VisionBoardWizard from './components/VisionBoardWizard'
 import VisionBoardCanvas from './components/VisionBoardCanvas'
 import VisionHistory from './components/VisionHistory'
-import { generateMultipleImages, generateQuotes } from './services/imageGenerator'
+import { generateMultipleImages, generateQuestions } from './services/imageGenerator'
 import { buildGoalPrompts } from './utils/boardBuilder'
 import './App.css'
 
@@ -25,6 +25,9 @@ function App() {
   const [showBoard, setShowBoard] = useState(false)
   const [availableQuotes, setAvailableQuotes] = useState([])
   const [quotesLoading, setQuotesLoading] = useState(false)
+  const [questions, setQuestions] = useState([])
+  const [questionsLoading, setQuestionsLoading] = useState(false)
+  const [answers, setAnswers] = useState({})
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('visionBoardHistory')
@@ -48,18 +51,6 @@ function App() {
 
   const handleNext = async () => {
     if (currentStep < 5) {
-      // When moving to step 3 (Quotes), fetch quotes from Gemini
-      if (currentStep === 2) {
-        setQuotesLoading(true)
-        try {
-          const quotes = await generateQuotes(formData.visionType, formData.goals)
-          setAvailableQuotes(quotes)
-        } catch (error) {
-          console.error('Failed to fetch quotes:', error)
-        } finally {
-          setQuotesLoading(false)
-        }
-      }
       setCurrentStep(prev => prev + 1)
     }
   }
@@ -167,6 +158,10 @@ function App() {
           onSizeChange={setImageSize}
           availableQuotes={availableQuotes}
           quotesLoading={quotesLoading}
+          questions={questions}
+          questionsLoading={questionsLoading}
+          answers={answers}
+          onAnswersChange={setAnswers}
         />
       ) : (
         <VisionBoardCanvas
@@ -179,13 +174,7 @@ function App() {
           onRegenerate={handleGenerate}
           onReset={handleReset}
           boardStyle="grid"
-        />
-      )}
-
-      {history.length > 0 && !showBoard && (
-        <VisionHistory
-          history={history}
-          onSelect={handleHistorySelect}
+          imageSize={imageSize}
         />
       )}
     </div>

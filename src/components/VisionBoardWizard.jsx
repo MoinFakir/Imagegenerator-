@@ -58,7 +58,11 @@ function VisionBoardWizard({
   imageSize,
   onSizeChange,
   availableQuotes = [],
-  quotesLoading = false
+  quotesLoading = false,
+  questions = [],
+  questionsLoading = false,
+  answers = {},
+  onAnswersChange
 }) {
 
   const canProceed = () => {
@@ -70,7 +74,7 @@ function VisionBoardWizard({
         }
         return formData.visionType !== ''
       case 2: return formData.goals.length >= 1
-      case 3: return formData.quotes.length > 0 || formData.affirmation.trim() !== ''
+      case 3: return Object.keys(answers).length >= 1 // At least 1 answer required
       case 4: return formData.timeline !== '' // Timeline is required
       case 5: return true // Size selection is optional
       default: return false
@@ -95,32 +99,39 @@ function VisionBoardWizard({
             <h2 className="step-title">What's your primary focus?</h2>
             <p className="step-subtitle">Choose the main theme for your vision board</p>
             <div className="vision-type-grid">
-              {VISION_TYPES.map(type => (
-                <div
-                  key={type.id}
-                  className={`vision-card ${formData.visionType === type.id ? 'selected' : ''}`}
-                  onClick={() => onFormChange('visionType', type.id)}
-                >
-                  <span className="vision-icon">{type.icon}</span>
-                  <h3 className="vision-title">{type.title}</h3>
-                  <p className="vision-desc">{type.desc}</p>
-                </div>
-              ))}
+              {VISION_TYPES.map(type => {
+                const isSelected = formData.visionType === type.id
+                const isTypeVision = type.id === 'typevision'
+
+                return (
+                  <div
+                    key={type.id}
+                    className={`vision-card ${isSelected ? 'selected' : ''}`}
+                    onClick={() => onFormChange('visionType', type.id)}
+                  >
+                    {isTypeVision && isSelected ? (
+                      <textarea
+                        className="custom-textarea card-embedded-textarea"
+                        placeholder="Type your dream..."
+                        value={formData.customVisionText || ''}
+                        onChange={(e) => onFormChange('customVisionText', e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
+                    ) : (
+                      <>
+                        <span className="vision-icon">{type.icon}</span>
+                        <h3 className="vision-title">{type.title}</h3>
+                        <p className="vision-desc">{type.desc}</p>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Show text input when Type Your Vision is selected */}
-            {formData.visionType === 'typevision' && (
-              <div className="custom-vision-input">
-                <label className="form-label">✨ Describe your vision</label>
-                <textarea
-                  className="custom-textarea"
-                  placeholder="Type your dream, vision, or what you want to manifest... Be as detailed as you like!"
-                  value={formData.customVisionText || ''}
-                  onChange={(e) => onFormChange('customVisionText', e.target.value)}
-                  rows={4}
-                />
-              </div>
-            )}
+            {/* Removed external input block */}
           </div>
         )
 
@@ -143,53 +154,20 @@ function VisionBoardWizard({
       case 3:
         return (
           <div className="step-content">
-            <h2 className="step-title">Quotes & Affirmations</h2>
-            <p className="step-subtitle">Add inspirational text to your vision board</p>
+            <h2 className="step-title">Tell Me More</h2>
+            <p className="step-subtitle">Share your vision and goals in detail</p>
 
             <div className="form-section">
-              <label className="form-label">✨ Your Personal Affirmation</label>
-              <input
-                type="text"
-                className="custom-input"
-                placeholder="e.g., I am attracting abundance and success every day"
-                value={formData.affirmation}
-                onChange={(e) => onFormChange('affirmation', e.target.value)}
-              />
-            </div>
-
-            <div className="form-section">
-              <label className="form-label">💫 AI-Generated Quotes (based on your goals)</label>
-              {quotesLoading ? (
-                <div className="quotes-loading">
-                  <div className="quotes-spinner"></div>
-                  <span>Generating personalized quotes...</span>
-                </div>
-              ) : (
-                <div className="quotes-grid">
-                  {availableQuotes.map((quote, index) => (
-                    <div
-                      key={index}
-                      className={`quote-option ${formData.quotes?.includes(quote) ? 'selected' : ''}`}
-                      onClick={() => handleQuoteToggle(quote)}
-                    >
-                      <span className="quote-check">
-                        {formData.quotes?.includes(quote) ? '✓' : '○'}
-                      </span>
-                      <span className="quote-content">"{quote}"</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="form-section">
-              <label className="form-label">📝 Or write your own quote</label>
-              <input
-                type="text"
-                className="custom-input"
-                placeholder="Enter a custom inspirational quote..."
-                value={formData.customQuote || ''}
-                onChange={(e) => onFormChange('customQuote', e.target.value)}
+              <label className="form-label">✨ Tell me more about your vision and goal</label>
+              <textarea
+                className="custom-textarea"
+                placeholder="Describe your vision, what you want to achieve, how it will make you feel, and what success looks like to you..."
+                value={answers[0] || ''}
+                onChange={(e) => {
+                  const newAnswers = { ...answers, 0: e.target.value }
+                  onAnswersChange(newAnswers)
+                }}
+                rows={8}
               />
             </div>
           </div>

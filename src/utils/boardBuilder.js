@@ -5,23 +5,49 @@
  * @returns {Array} - Array of prompts for each goal
  */
 export function buildGoalPrompts(goals, visionType) {
-  return goals.map(goal => {
-    const baseStyle = `Ultra realistic, cinematic photography, 4K quality, bright positive mood, 
-      modern aesthetic, soft dramatic lighting, inspirational atmosphere, 
-      no text, no letters, no words, no watermarks, clean composition`
+  // Inspirational quotes to embed in images
+  const quotes = [
+    "Dream it. Believe it. Achieve it.",
+    "Your only limit is your imagination.",
+    "Make it happen.",
+    "The future belongs to those who believe.",
+    "Success starts with a vision.",
+    "Believe in yourself.",
+    "You are capable of amazing things.",
+    "Every day is a new opportunity."
+  ]
+
+  return goals.map((goal, index) => {
+    const baseStyle = `High-end editorial photography, 8k resolution, photorealistic, cinematic lighting, vibrant and uplifting colors, sharp focus, highly detailed, professional composition`
+
+    const negativeConstraints = `Avoid: cartoon, illustration, 3d render, drawing, painting, watermark, blurry, distorted, dark, gloomy`
 
     const visionContext = getVisionContext(visionType)
 
+    // Select a quote for this goal (cycle through quotes)
+    const quote = quotes[index % quotes.length]
+
     const prompt = `
-      ${baseStyle},
+      Create a stunning, photorealistic image representing: ${goal.title}.
       
-      GOAL: ${goal.title},
-      DETAILS: ${goal.description || goal.title},
-      CONTEXT: ${visionContext},
+      Scene Details: ${goal.description || goal.title}
+      Context: ${visionContext}
       
-      Create a beautiful, aspirational image representing this goal as already achieved,
-      emotionally uplifting and motivating, suitable for a vision board section,
-      photorealistic quality with artistic touch, single cohesive scene
+      Style: ${baseStyle}
+      
+      IMPORTANT: Include this inspirational text overlaid on the image in elegant typography:
+      "${quote}"
+      
+      The text should be:
+      - Positioned prominently (bottom third or center of image)
+      - White or gold color with subtle shadow for readability
+      - Elegant, modern font
+      - Integrated naturally into the composition
+      
+      Requirements:
+      - The image must look like a real, high-quality photograph with motivational text overlay.
+      - Emotional tone: Uplifting, inspiring, and positive.
+      - ${negativeConstraints}
     `.replace(/\s+/g, ' ').trim()
 
     return {

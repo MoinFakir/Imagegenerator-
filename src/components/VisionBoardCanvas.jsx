@@ -10,7 +10,8 @@ function VisionBoardCanvas({
   loadingProgress,
   onRegenerate,
   onReset,
-  boardStyle = 'grid'
+  boardStyle = 'grid',
+  imageSize = 'desktop'
 }) {
   const canvasRef = useRef(null)
 
@@ -70,7 +71,7 @@ function VisionBoardCanvas({
     <div className="vision-board-preview">
       <div
         ref={canvasRef}
-        className={`vision-board-canvas ${getGridClass()}`}
+        className={`vision-board-canvas ${getGridClass()} ${imageSize}`}
       >
         {/* Title Banner */}
         <div className="board-title-banner">
@@ -96,13 +97,7 @@ function VisionBoardCanvas({
                   <span>{goal.emoji}</span>
                 </div>
               )}
-              <div className="goal-overlay">
-                <span className="goal-emoji-display">{goal.emoji}</span>
-                <h3 className="goal-title-display">{goal.title}</h3>
-                {goal.description && (
-                  <p className="goal-desc-display">{goal.description}</p>
-                )}
-              </div>
+              {/* Overlay removed - clean image display */}
             </div>
           ))}
         </div>

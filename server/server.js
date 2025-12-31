@@ -121,15 +121,84 @@ Every day brings new opportunities`;
   }
 });
 
+// Generate personalized questions based on vision type and goals
+app.post('/generate-questions', async (req, res) => {
+  try {
+    const { visionType, goals } = req.body;
+
+    console.log('Generating questions for:', visionType);
+    console.log('Goals:', goals);
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp"
+    });
+
+    const goalTitles = goals?.map(g => g.title).filter(t => t).join(', ') || 'personal growth';
+    const goalDetails = goals?.map(g => `${g.emoji} ${g.title}: ${g.description || ''}`).join('\n') || '';
+
+    const prompt = `You are helping someone create a vision board for "${visionType}". 
+
+Their specific goals are:
+${goalDetails}
+
+Generate exactly 3 unique, deep, thought-provoking questions that will help them clarify their vision and dreams.
+
+IMPORTANT REQUIREMENTS:
+- Each question MUST be different and unique
+- Questions should be SPECIFIC to their vision type "${visionType}" and their individual goals
+- Ask about their vision, feelings, ideal outcomes, and what success looks like
+- Make questions personal and introspective
+- Each question should be 12-25 words
+- Focus on visualization and emotional connection
+- Return ONLY the questions, one per line
+- No numbering, no bullet points, no extra text
+
+Examples of GOOD questions for different vision types:
+- For Money/Wealth: "Describe your ideal lifestyle when you achieve financial freedom - where do you live and what does your day look like?"
+- For Health: "How will your body feel and what activities will you enjoy when you reach your peak fitness?"
+- For Career: "What recognition and achievements will make you feel most proud in your professional journey?"
+
+Now generate 3 unique questions specifically for "${visionType}" with goals: ${goalTitles}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse questions from response
+    const questions = text
+      .split('\n')
+      .map(q => q.trim())
+      .filter(q => q.length > 0 && q.includes('?'))
+      .slice(0, 3); // Get exactly 3 questions
+
+    res.json({
+      success: true,
+      questions: questions
+    });
+  } catch (error) {
+    console.error('Question generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      questions: [
+        "What does success look like for you in this area?",
+        "How will achieving this goal change your life?",
+        "What steps are you most excited to take?"
+      ]
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Gemini proxy server is running' });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`🚀 Gemini proxy server running on http://localhost:${PORT}`);
   console.log('Endpoints:');
   console.log('  POST /generate-image - Generate image from prompt');
+  console.log('  POST /generate-questions - Generate personalized questions');
   console.log('  GET /health - Health check');
 });
