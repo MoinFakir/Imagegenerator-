@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import VisionBoardWizard from './components/VisionBoardWizard'
 import VisionBoardCanvas from './components/VisionBoardCanvas'
 import VisionHistory from './components/VisionHistory'
-import { generateMultipleImages, generateQuestions } from './services/imageGenerator'
+import { generateMultipleImages, generateQuestions, generateVisionQuotes, generateIndividualQuotes } from './services/imageGenerator'
 import { buildGoalPrompts } from './utils/boardBuilder'
 import './App.css'
+
 
 function App() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -68,8 +69,38 @@ function App() {
     setGoalImages({})
 
     try {
-      // Build prompts for each goal
-      const goalPrompts = buildGoalPrompts(formData.goals, formData.visionType)
+      // Get user's vision answer
+      const userVision = answers[0] || ''
+
+      // Generate individual quotes for each goal (unique per goal)
+      let goalQuotesMap = {}
+      try {
+        console.log('Generating individual quotes for each goal...')
+        goalQuotesMap = await generateIndividualQuotes(
+          formData.goals,
+          userVision,
+          formData.visionType
+        )
+        console.log('Individual quotes generated:', goalQuotesMap)
+      } catch (error) {
+        console.error('Failed to generate individual quotes:', error)
+      }
+
+      // Build prompts with user's vision and goal-specific quotes
+      const goalPrompts = buildGoalPrompts(
+        formData.goals,
+        formData.visionType,
+        userVision,
+        goalQuotesMap  // Pass the goal-specific quotes map
+      )
+
+      // Extract quotes from goalPrompts for display
+      const imageQuotesMap = {}
+      goalPrompts.forEach(promptObj => {
+        if (promptObj.quote) {
+          imageQuotesMap[promptObj.goalId] = promptObj.quote
+        }
+      })
 
       // Generate images with progress tracking
       const images = await generateMultipleImages(goalPrompts, (progress) => {
@@ -78,7 +109,13 @@ function App() {
 
       setGoalImages(images)
 
-      // Compile quotes
+      // Save the quotes map for display with images
+      setFormData(prev => ({
+        ...prev,
+        imageQuotes: imageQuotesMap
+      }))
+
+      // Compile quotes for the quotes section (if any)
       const allQuotes = [
         ...(formData.quotes || []),
         ...(formData.customQuote ? [formData.customQuote] : [])
@@ -89,6 +126,7 @@ function App() {
         id: Date.now(),
         goals: formData.goals,
         goalImages: images,
+        imageQuotes: imageQuotesMap,  // Save the per-image quotes
         quotes: allQuotes,
         affirmation: formData.affirmation,
         visionType: formData.visionType,
@@ -167,6 +205,7 @@ function App() {
         <VisionBoardCanvas
           goals={formData.goals}
           quotes={allQuotes}
+          imageQuotes={formData.imageQuotes || {}}
           affirmation={formData.affirmation}
           goalImages={goalImages}
           isLoading={isLoading}

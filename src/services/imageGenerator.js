@@ -5,7 +5,7 @@
  * @returns {Promise<string>} - The generated image as a data URL
  */
 export async function generateVisionBoardImage(prompt, size = 'desktop') {
-  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
+  const PROXY_URL = 'http://localhost:3002'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-image`, {
@@ -102,7 +102,7 @@ export async function generateImagesParallel(goalPrompts, onProgress = () => { }
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateQuotes(visionType, goals) {
-  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
+  const PROXY_URL = 'http://localhost:3002'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-quotes`, {
@@ -150,7 +150,7 @@ export async function generateQuotes(visionType, goals) {
  * @returns {Promise<Array>} - Array of question strings
  */
 export async function generateQuestions(visionType, goals) {
-  const PROXY_URL = 'https://image-generator-72t9.onrender.com'
+  const PROXY_URL = 'http://localhost:3002'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-questions`, {
@@ -186,3 +186,117 @@ export async function generateQuestions(visionType, goals) {
     ]
   }
 }
+
+/**
+ * Generate personalized quotes based on user's vision
+ * @param {string} userVision - User's detailed vision description
+ * @param {Array} goals - Array of selected goals
+ * @returns {Promise<Array>} - Array of quote strings
+ */
+export async function generateVisionQuotes(userVision, goals) {
+  const PROXY_URL = 'http://localhost:3002'
+
+  try {
+    const response = await fetch(`${PROXY_URL}/generate-vision-quotes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userVision: userVision,
+        goals: goals
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.quotes && data.quotes.length > 0) {
+      return data.quotes
+    }
+
+    // Fallback quotes
+    return [
+      "Dream it. Believe it. Achieve it.",
+      "Make it happen.",
+      "Your journey starts now."
+    ]
+  } catch (error) {
+    console.error('Vision quote generation error:', error)
+    return [
+      "Dream it. Believe it. Achieve it.",
+      "Make it happen.",
+      "Your journey starts now."
+    ]
+  }
+}
+
+/**
+ * Generate individual quotes for each goal
+ * @param {Array} goals - Array of goal objects with id, title, description
+ * @param {string} userVision - User's detailed vision description
+ * @param {string} visionType - The selected vision type
+ * @returns {Promise<Object>} - Object mapping goalId to quote string
+ */
+export async function generateIndividualQuotes(goals, userVision, visionType) {
+  const PROXY_URL = 'http://localhost:3002'  // Use local server
+  console.log('🎯 Calling local server to generate individual quotes...')
+
+  try {
+    const response = await fetch(`${PROXY_URL}/generate-individual-quotes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        goals: goals,
+        userVision: userVision,
+        visionType: visionType
+      })
+    })
+
+    const data = await response.json()
+
+    console.log('✅ Received quotes from server:', data)
+
+    if (data.quotes && Object.keys(data.quotes).length > 0) {
+      return data.quotes
+    }
+
+    // Fallback: create basic quotes for each goal
+    const fallbackQuotes = {}
+    const defaultQuotes = [
+      "Dream it. Believe it. Achieve it.",
+      "Make it happen.",
+      "Your journey starts now.",
+      "Success is yours.",
+      "Believe in yourself.",
+      "You are unstoppable."
+    ]
+
+    goals.forEach((goal, index) => {
+      fallbackQuotes[goal.id] = defaultQuotes[index % defaultQuotes.length]
+    })
+
+    return fallbackQuotes
+  } catch (error) {
+    console.error('Individual quote generation error:', error)
+
+    // Fallback: create basic quotes for each goal
+    const fallbackQuotes = {}
+    const defaultQuotes = [
+      "Dream it. Believe it. Achieve it.",
+      "Make it happen.",
+      "Your journey starts now.",
+      "Success is yours.",
+      "Believe in yourself.",
+      "You are unstoppable."
+    ]
+
+    goals.forEach((goal, index) => {
+      fallbackQuotes[goal.id] = defaultQuotes[index % defaultQuotes.length]
+    })
+
+    return fallbackQuotes
+  }
+}
+
