@@ -3,6 +3,18 @@ const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
+console.log('--- API CONFIG CHECK ---');
+const debugKey = process.env.GEMINI_API_KEY;
+console.log('API Key loaded:', debugKey ? 'YES' : 'NO');
+if (debugKey) {
+  console.log('API Key length:', debugKey.length);
+  console.log('API Key start:', debugKey.substring(0, 4));
+  console.log('API Key end:', debugKey.substring(debugKey.length - 4));
+} else {
+  console.error('CRITICAL: GEMINI_API_KEY is missing in .env');
+}
+console.log('------------------------');
+
 const app = express();
 app.use(cors()); // Allows your frontend to talk to this backend
 app.use(express.json());
@@ -20,7 +32,6 @@ async function generateFallbackQuotes(count = 5, context = 'motivation and succe
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp"
     });
-
     const prompt = `Generate exactly ${count} short, powerful, universal inspirational quotes about ${context}.
 
 Requirements:
@@ -75,9 +86,9 @@ app.post('/generate-image', async (req, res) => {
     console.log('Generating image with prompt:', prompt);
     console.log('Size:', size);
 
-    // Use Gemini 2.0 Flash with image generation capability
+    // Use Gemini 3.0 Pro for image generation
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-3-pro-image-preview",
       generationConfig: {
         responseModalities: ["image", "text"],
       }
@@ -454,6 +465,7 @@ What steps are you most excited to take?`;
     "What steps are you most excited to take?"
   ];
 }
+
 
 
 // Health check endpoint

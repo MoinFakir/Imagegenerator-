@@ -11,7 +11,8 @@ function VisionBoardCanvas({
   loadingProgress,
   onRegenerate,
   onReset,
-  imageSize = 'desktop'
+  imageSize = 'desktop',
+  collageImage
 }) {
   const canvasRef = useRef(null)
   const [randomBoardStyle, setRandomBoardStyle] = useState(null)
@@ -107,14 +108,14 @@ function VisionBoardCanvas({
       <div className="vision-board-loading">
         <div className="loading-spinner-large"></div>
         <h2>✨ Creating Your Vision Board...</h2>
-        <p>Generating {goals.length} images for your dreams</p>
+        <p>Designing your professional vision board collage...</p>
         <div className="progress-bar">
           <div
             className="progress-fill"
             style={{ width: `${loadingProgress}%` }}
           ></div>
         </div>
-        <span className="progress-text">{Math.round(loadingProgress)}% complete</span>
+        <span className="progress-text">Generating premium collage...</span>
       </div>
     )
   }
@@ -126,65 +127,86 @@ function VisionBoardCanvas({
         className={`vision-board-canvas ${getGridClass()} ${imageSize}`}
         style={randomBoardStyle ? {
           border: randomBoardStyle.border,
-          borderRadius: randomBoardStyle.borderRadius
+          borderRadius: randomBoardStyle.borderRadius,
+          padding: '0', // Remove padding for full-bleed collage
+          overflow: 'hidden' // Ensure collage stays within bounds
         } : {}}
       >
-        {/* Title Banner */}
-        <div
-          className="board-title-banner"
-          style={randomBoardStyle ? {
-            background: randomBoardStyle.headerBg
-          } : {}}
-        >
-          <h1
-            className="board-main-title"
-            style={randomBoardStyle ? {
-              color: randomBoardStyle.headerText
-            } : {}}
-          >
-            My Vision Board
-          </h1>
-          {affirmation && (
-            <p className="board-affirmation">{affirmation}</p>
-          )}
-        </div>
-
-        {/* Goals Grid */}
-        <div className="goals-grid">
-          {goals.map((goal, index) => (
-            <div key={goal.id} className="goal-cell">
-              {goalImages[goal.id] ? (
-                <img
-                  src={goalImages[goal.id]}
-                  alt={goal.title}
-                  className="goal-image"
-                  crossOrigin="anonymous"
-                />
-              ) : (
-                <div className="goal-image-placeholder">
-                  <span>{goal.emoji}</span>
-                </div>
-              )}
-              {/* Display the unique quote for this image */}
-              {imageQuotes[goal.id] && (
-                <div className="image-quote-overlay">
-                  <p className="image-quote-text">"{imageQuotes[goal.id]}"</p>
-                </div>
+        {collageImage ? (
+          // Single Collage Image Display
+          <img
+            src={collageImage}
+            alt="Vision Board Collage"
+            className="collage-image-full"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block'
+            }}
+            crossOrigin="anonymous"
+          />
+        ) : (
+          // Legacy Grid Display (Fallback)
+          <>
+            {/* Title Banner */}
+            <div
+              className="board-title-banner"
+              style={randomBoardStyle ? {
+                background: randomBoardStyle.headerBg
+              } : {}}
+            >
+              <h1
+                className="board-main-title"
+                style={randomBoardStyle ? {
+                  color: randomBoardStyle.headerText
+                } : {}}
+              >
+                My Vision Board
+              </h1>
+              {affirmation && (
+                <p className="board-affirmation">{affirmation}</p>
               )}
             </div>
-          ))}
-        </div>
 
-        {/* General Quotes Section (if any) */}
-        {quotes && quotes.length > 0 && (
-          <div className="quotes-section">
-            {quotes.map((quote, index) => (
-              <div key={index} className="quote-item">
-                <span className="quote-mark">"</span>
-                <p className="quote-text">{quote}</p>
+            {/* Goals Grid */}
+            <div className="goals-grid">
+              {goals.map((goal, index) => (
+                <div key={goal.id} className="goal-cell">
+                  {goalImages[goal.id] ? (
+                    <img
+                      src={goalImages[goal.id]}
+                      alt={goal.title}
+                      className="goal-image"
+                      crossOrigin="anonymous"
+                    />
+                  ) : (
+                    <div className="goal-image-placeholder">
+                      <span>{goal.emoji}</span>
+                    </div>
+                  )}
+                  {/* Display the unique quote for this image */}
+                  {imageQuotes[goal.id] && (
+                    <div className="image-quote-overlay">
+                      <p className="image-quote-text">"{imageQuotes[goal.id]}"</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* General Quotes Section (if any) */}
+            {quotes && quotes.length > 0 && (
+              <div className="quotes-section">
+                {quotes.map((quote, index) => (
+                  <div key={index} className="quote-item">
+                    <span className="quote-mark">"</span>
+                    <p className="quote-text">{quote}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

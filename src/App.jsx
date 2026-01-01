@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react'
 import VisionBoardWizard from './components/VisionBoardWizard'
 import VisionBoardCanvas from './components/VisionBoardCanvas'
 import VisionHistory from './components/VisionHistory'
-import { generateMultipleImages, generateQuestions, generateVisionQuotes, generateIndividualQuotes } from './services/imageGenerator'
+import {
+  generateMultipleImages,
+  generateQuestions,
+  generateVisionQuotes,
+  generateIndividualQuotes,
+  generateVisionBoardPrompt,
+  generateVisionBoardImage,
+  generateVisionBoardQuote
+} from './services/imageGenerator'
 import { buildGoalPrompts } from './utils/boardBuilder'
 import './App.css'
 
@@ -19,6 +27,7 @@ function App() {
     timeline: ''
   })
   const [goalImages, setGoalImages] = useState({})
+  const [collageImage, setCollageImage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [imageSize, setImageSize] = useState('desktop')
@@ -31,6 +40,7 @@ function App() {
   const [answers, setAnswers] = useState({})
 
   useEffect(() => {
+    // Load history
     const savedHistory = localStorage.getItem('visionBoardHistory')
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory))
@@ -64,77 +74,78 @@ function App() {
 
   const handleGenerate = async () => {
     setIsLoading(true)
-    setLoadingProgress(0)
+    setLoadingProgress(10) // Start progress
     setShowBoard(true)
     setGoalImages({})
+    setCollageImage(null)
 
     try {
       // Get user's vision answer
       const userVision = answers[0] || ''
 
-      // Generate individual quotes for each goal (unique per goal)
-      let goalQuotesMap = {}
-      try {
-        console.log('Generating individual quotes for each goal...')
-        goalQuotesMap = await generateIndividualQuotes(
-          formData.goals,
-          userVision,
-          formData.visionType
-        )
-        console.log('Individual quotes generated:', goalQuotesMap)
-      } catch (error) {
-        console.error('Failed to generate individual quotes:', error)
+      // Fetch a dynamic quote first
+      setLoadingProgress(20)
+      console.log('Fetching dynamic quote...')
+      const dynamicQuote = await generateVisionBoardQuote(userVision, formData.visionType)
+      console.log('Quote fetched:', dynamicQuote)
+
+      // Prepare data for prompt generation including the quote
+      const visionData = {
+        theme: formData.visionType,
+        goals: formData.goals, // Pass full goal objects
+        timeline: formData.timeline,
+        boardSize: imageSize,
+        userVision: userVision,
+        quote: dynamicQuote
       }
 
-      // Build prompts with user's vision and goal-specific quotes
-      const goalPrompts = buildGoalPrompts(
-        formData.goals,
-        formData.visionType,
-        userVision,
-        goalQuotesMap  // Pass the goal-specific quotes map
-      )
+      setLoadingProgress(30)
 
-      // Extract quotes from goalPrompts for display
-      const imageQuotesMap = {}
-      goalPrompts.forEach(promptObj => {
-        if (promptObj.quote) {
-          imageQuotesMap[promptObj.goalId] = promptObj.quote
-        }
-      })
+      // Generate the comprehensive prompt
+      console.log('Generating vision board prompt...')
+      const prompt = generateVisionBoardPrompt(visionData)
+      console.log('Prompt generated:', prompt)
 
-      // Generate images with progress tracking
-      const images = await generateMultipleImages(goalPrompts, (progress) => {
-        setLoadingProgress(progress)
-      })
+      setLoadingProgress(50)
 
-      setGoalImages(images)
+      // Generate the single collage image
+      console.log('Calling Gemini for collage generation...')
+      const imageUrl = await generateVisionBoardImage(prompt, imageSize)
+      console.log('Collage generated successfully')
 
-      // Save the quotes map for display with images
-      setFormData(prev => ({
-        ...prev,
-        imageQuotes: imageQuotesMap
-      }))
-
-      // Compile quotes for the quotes section (if any)
-      const allQuotes = [
-        ...(formData.quotes || []),
-        ...(formData.customQuote ? [formData.customQuote] : [])
-      ]
+      setCollageImage(imageUrl)
+      setLoadingProgress(100)
 
       // Save to history
       const newHistoryItem = {
         id: Date.now(),
         goals: formData.goals,
-        goalImages: images,
-        imageQuotes: imageQuotesMap,  // Save the per-image quotes
-        quotes: allQuotes,
+        collageImage: imageUrl, // Save single image
+        goalImages: {}, // Empty for legacy compatibility
+        imageQuotes: {},
+        quotes: formData.quotes || [],
         affirmation: formData.affirmation,
         visionType: formData.visionType,
         date: new Date().toLocaleDateString()
       }
-      const updatedHistory = [newHistoryItem, ...history].slice(0, 10)
+
+      const updatedHistory = [newHistoryItem, ...history].slice(0, 5) // Keep only last 5 to save space
       setHistory(updatedHistory)
-      localStorage.setItem('visionBoardHistory', JSON.stringify(updatedHistory))
+
+      try {
+        localStorage.setItem('visionBoardHistory', JSON.stringify(updatedHistory))
+      } catch (storageError) {
+        console.warn('Failed to save to history (quota exceeded):', storageError)
+        // If quota exceeded, try saving just the current one or clearing old history
+        try {
+          // Try saving just the metadata without the heavy image
+          const lightHistory = updatedHistory.map(item => ({ ...item, collageImage: null, goalImages: {} }))
+          localStorage.setItem('visionBoardHistory', JSON.stringify(lightHistory))
+        } catch (e) {
+          console.error('Could not save history even without images', e)
+        }
+      }
+
     } catch (error) {
       console.error('Error generating vision board:', error)
       alert('Failed to generate vision board. Please try again.')
@@ -155,6 +166,7 @@ function App() {
       timeline: ''
     })
     setGoalImages({})
+    setCollageImage(null)
     setShowBoard(false)
     setLoadingProgress(0)
   }
@@ -168,6 +180,7 @@ function App() {
       affirmation: item.affirmation || ''
     }))
     setGoalImages(item.goalImages || {})
+    setCollageImage(item.collageImage || null)
     setShowBoard(true)
   }
 
@@ -208,6 +221,7 @@ function App() {
           imageQuotes={formData.imageQuotes || {}}
           affirmation={formData.affirmation}
           goalImages={goalImages}
+          collageImage={collageImage}
           isLoading={isLoading}
           loadingProgress={loadingProgress}
           onRegenerate={handleGenerate}
