@@ -192,9 +192,13 @@ Every day brings new opportunities`;
 // Generate personalized quotes based on user's vision
 app.post('/generate-vision-quotes', async (req, res) => {
   try {
-    const { userVision, goals } = req.body;
+    const { userVision, goals, language } = req.body;
 
-    console.log('Generating quotes from user vision:', userVision);
+    // Normalize languages to array
+    const languages = Array.isArray(language) ? language : [language || 'English'];
+    const langsString = languages.join(', ');
+
+    console.log(`Generating quotes from user vision in [${langsString}]:`, userVision);
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp"
@@ -202,37 +206,66 @@ app.post('/generate-vision-quotes', async (req, res) => {
 
     const goalTitles = goals?.map(g => g.title).join(', ') || '';
 
-    const prompt = `Based on this person's vision and goals, generate ${goals?.length || 3} short, powerful, inspirational quotes.
+    // Determine number of quotes based on selected GOALS
+    const numGoals = goals?.length || 4;
+    const numQuotes = Math.max(numGoals, 1); // At least 1 quote
 
+    // Create language-specific instructions
+    let languageInstructions = '';
+    if (languages.length === 1) {
+      languageInstructions = `- Generate ALL ${numQuotes} quotes in ${languages[0]}.`;
+    } else if (languages.length === 2) {
+      const half = Math.ceil(numQuotes / 2);
+      languageInstructions = `- Generate approximately ${half} quotes in ${languages[0]} and ${numQuotes - half} quotes in ${languages[1]}.`;
+    } else if (languages.length === 3) {
+      languageInstructions = `- Distribute the ${numQuotes} quotes across ${langsString}, using each language at least once.`;
+    }
+
+    // Generate quote keys dynamically
+    const quoteKeys = [];
+    for (let i = 0; i < numQuotes; i++) {
+      quoteKeys.push(`quote${i + 1}`);
+    }
+    const jsonStructure = quoteKeys.map(key => `  "${key}": "Quote string"`).join(',\n');
+
+    const prompt = `Based on this person's vision and goals, generate ${numQuotes} short, powerful, inspirational quotes.
+    
 User's Vision:
 ${userVision}
 
 Goals: ${goalTitles}
 
 Requirements:
-- Generate exactly ${goals?.length || 3} unique quotes
-- Each quote should be 3-8 words maximum
-- Make them personal and specific to their vision
-- Use motivational, empowering language
-- Return ONLY the quotes, one per line
-- No numbering, no bullet points, no extra text
+- SELECTED LANGUAGES: ${langsString}
+${languageInstructions}
+- Use Devanagari script for Hindi/Marathi quotes.
+- Return valid JSON format ONLY.
+- Each quote must be 3-8 words maximum.
+- Generate ${numQuotes} unique quotes that are motivational and relevant to the goals.
+- Each quote should be inspiring and actionable.
 
-Examples of good short quotes:
-- Dream it. Believe it. Achieve it.
-- Your journey starts today.
-- Make it happen.
-- Believe in yourself.`;
+Required JSON Structure:
+{
+${jsonStructure}
+}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
-    // Parse quotes from response
-    const quotes = text
-      .split('\n')
-      .map(q => q.trim())
-      .filter(q => q.length > 0 && q.length < 100)
-      .slice(0, goals?.length || 3);
+    let quotes = [];
+    try {
+      // Remove any markdown code blocks if present
+      const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const quotesObj = JSON.parse(cleanText);
+
+      // Convert to array
+      quotes = Object.values(quotesObj).slice(0, numQuotes);
+    } catch (e) {
+      console.error("Failed to parse quotes JSON:", e);
+      // Fallback if JSON parsing fails
+      quotes = text.split('\n').filter(q => q.length > 5).slice(0, numQuotes);
+    }
 
     res.json({
       success: true,
@@ -241,8 +274,13 @@ Examples of good short quotes:
   } catch (error) {
     console.error('Quote generation error:', error);
 
-    // Generate fallback quotes dynamically
-    const fallbackQuotes = await generateFallbackQuotes(goals?.length || 3, 'personal vision and dreams');
+    // Fallback categorized quotes
+    const fallbackQuotes = [
+      "Dream Big.",
+      "Stay Focused.",
+      "Enjoy the Journey.",
+      "Find Balance."
+    ];
 
     res.status(500).json({
       success: false,

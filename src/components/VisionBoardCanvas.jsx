@@ -108,14 +108,14 @@ function VisionBoardCanvas({
       <div className="vision-board-loading">
         <div className="loading-spinner-large"></div>
         <h2>✨ Creating Your Vision Board...</h2>
-        <p>Designing your professional vision board collage...</p>
+        <p>Designing your professional vision board...</p>
         <div className="progress-bar">
           <div
             className="progress-fill"
             style={{ width: `${loadingProgress}%` }}
           ></div>
         </div>
-        <span className="progress-text">Generating premium collage...</span>
+        <span className="progress-text">Generating premium vision board...</span>
       </div>
     )
   }

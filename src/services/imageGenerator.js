@@ -407,12 +407,35 @@ export function generateVisionBoardPrompt(data) {
     return GOAL_MAP[mapKey] || GOAL_MAP[key] || (typeof g === 'object' ? (g.description || g.title) : g)
   }).join(", ")
   const timelineText = TIMELINE_MAP[data.timeline] || data.timeline
+
+  // Format timeline for display (e.g., "1year" -> "1 YEAR")
+  const timelineLabel = (data.timeline || "Future").replace(/(\d+)([a-z]+)/, '$1 $2').toUpperCase();
+
   const sizeText = SIZE_MAP[data.boardSize] || SIZE_MAP.desktop
 
   const userText = data.userVision
     ? `Personal vision statement: "${data.userVision}"`
     : ""
-  const quoteText = data.quote || "SUCCESS"
+  const quotes = Array.isArray(data.quotes) ? data.quotes : [data.quotes || "SUCCESS"]
+  const numGoals = data.goals.length;
+
+  // Build dynamic panel descriptions
+  const panels = [];
+
+  // Always add centerpiece
+  panels.push(`1. Centerpiece: A high-impact image representing ${themeText}.`);
+
+  // Add goal-based panels with quotes
+  data.goals.forEach((goal, index) => {
+    const goalText = typeof goal === 'object' ? (goal.title || goal.id) : goal;
+    const quote = quotes[index] || "";
+    const panelNum = index + 2;
+    panels.push(`${panelNum}. ${goalText}: Professional imagery. ${quote ? `Overlay text: "${quote}"` : ""}`);
+  });
+
+  // Add timeline panel at the end
+  const timelinePanelNum = numGoals + 2;
+  panels.push(`${timelinePanelNum}. Timeline: Must display "${timelineLabel}" in LARGE, BOLD font.`);
 
   // Determine color scheme based on theme
   let colorScheme = ""
@@ -432,15 +455,17 @@ export function generateVisionBoardPrompt(data) {
 A high-resolution, professional vision board collage in a grid layout, featuring a sophisticated color palette of ${colorScheme}. The aesthetic is 'Modern Executive' and 'Luxury Achievement.'
 
 The layout must include:
-1. Centerpiece: A high-impact image representing ${themeText}.
-2. Professional Milestones: Images of ${goalsText}.
-3. Inspiration: A clean, minimalist graphic with the quote "${quoteText}" in large, bold, elegant typography.
-4. Personal Identity: A professional figure that looks like: "${userText}", reflecting a 'Success' mindset.
-5. Lifestyle Rewards: High-end imagery matching the theme of ${data.theme} (e.g., luxury travel, premium lifestyle).
-6. Wellness & Discipline: A minimalist shot representing focus, discipline, and ${timelineText}.
+${panels.join('\n')}
 
 Style Requirements: Cinematic lighting, sharp focus, consistent color grading across all panels.
-TEXT POLICY: Text should appear ONLY in the dedicated "Inspiration" panel. Render the quote "${quoteText}" clearly. All other images must remain text-free.
+TEXT POLICY (CRITICAL - MUST FOLLOW):
+- Each goal panel (2-${numGoals + 1}): Display the corresponding quote with LARGE, BOLD, HIGHLY VISIBLE typography
+- Timeline panel (${timelinePanelNum}): Display "${timelineLabel}" - LARGE, BOLD font with clear visibility
+- Centerpiece panel (1): NO TEXT
+- ABSOLUTELY NO panel numbers (1, 2, 3, etc.) visible in the image
+- ALL TEXT MUST BE CLEARLY READABLE with proper contrast and sizing
+- Use semi-transparent overlays or text shadows to ensure text visibility
+8k resolution, photorealistic style, UHD, Raw Photo, Fujifilm GFX 100 type quality.
 8k resolution, photorealistic style, UHD, Raw Photo, Fujifilm GFX 100 type quality.
 
 
@@ -452,14 +477,18 @@ Flat 2D composition, high fidelity digital graphic design.
 }
 
 /**
- * Generate a single quote for the vision board based on user vision
+ * Generate quotes for the vision board based on user vision
  * @param {string} userVision - The user's vision text
  * @param {string} theme - The selected theme
- * @returns {Promise<string>} - A single quote string
+ * @param {string[]} languages - The selected languages
+ * @returns {Promise<string[]>} - Array of quote strings
  */
-export async function generateVisionBoardQuote(userVision, theme) {
+export async function generateVisionBoardQuote(userVision, theme, languages = ['English']) {
   const PROXY_URL = 'http://localhost:3002'
   const fallbackQuote = "Dream it. Believe it. Achieve it."
+
+  // Ensure languages is an array
+  const langArray = Array.isArray(languages) ? languages : [languages]
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-vision-quotes`, {
@@ -467,18 +496,20 @@ export async function generateVisionBoardQuote(userVision, theme) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userVision: userVision || `My vision for ${theme}`,
-        goals: [] // We just want one general quote
+        goals: [],
+        language: langArray // Passing array now
       })
     })
 
     const data = await response.json()
     if (data.quotes && data.quotes.length > 0) {
-      return data.quotes[0]
+      // Return up to 4 quotes
+      return data.quotes.slice(0, 4)
     }
-    return fallbackQuote
+    return [fallbackQuote]
   } catch (error) {
     console.error('Error fetching quote:', error)
-    return fallbackQuote
+    return [fallbackQuote]
   }
 }
 

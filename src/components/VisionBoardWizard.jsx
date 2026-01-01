@@ -170,6 +170,42 @@ function VisionBoardWizard({
                 rows={8}
               />
             </div>
+
+            <div className="form-section">
+              <label className="form-label">🗣️ Quote Language</label>
+              <div className="language-grid">
+                {['English', 'Hindi', 'Marathi'].map(lang => {
+                  const isSelected = Array.isArray(formData.language)
+                    ? formData.language.includes(lang)
+                    : formData.language === lang;
+
+                  return (
+                    <div
+                      key={lang}
+                      className={`language-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => {
+                        let currentLangs = Array.isArray(formData.language) ? [...formData.language] : [formData.language];
+
+                        if (currentLangs.includes(lang)) {
+                          // Allow removing only if it's not the last one
+                          if (currentLangs.length > 1) {
+                            currentLangs = currentLangs.filter(l => l !== lang);
+                          }
+                        } else {
+                          currentLangs.push(lang);
+                        }
+                        onFormChange('language', currentLangs);
+                      }}
+                    >
+                      <div className="custom-checkbox">
+                        <i>✓</i>
+                      </div>
+                      <span className="language-name">{lang}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         )
 

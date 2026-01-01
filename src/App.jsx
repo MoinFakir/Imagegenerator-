@@ -24,7 +24,8 @@ function App() {
     customQuote: '',
     affirmation: '',
     customVisionText: '',
-    timeline: ''
+    timeline: '',
+    language: ['English']
   })
   const [goalImages, setGoalImages] = useState({})
   const [collageImage, setCollageImage] = useState(null)
@@ -86,8 +87,8 @@ function App() {
       // Fetch a dynamic quote first
       setLoadingProgress(20)
       console.log('Fetching dynamic quote...')
-      const dynamicQuote = await generateVisionBoardQuote(userVision, formData.visionType)
-      console.log('Quote fetched:', dynamicQuote)
+      const dynamicQuotes = await generateVisionBoardQuote(userVision, formData.visionType, formData.language)
+      console.log('Quotes fetched:', dynamicQuotes)
 
       // Prepare data for prompt generation including the quote
       const visionData = {
@@ -96,7 +97,7 @@ function App() {
         timeline: formData.timeline,
         boardSize: imageSize,
         userVision: userVision,
-        quote: dynamicQuote
+        quotes: dynamicQuotes
       }
 
       setLoadingProgress(30)
