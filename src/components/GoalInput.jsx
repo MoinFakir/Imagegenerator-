@@ -112,6 +112,33 @@ function GoalInput({ goals, onGoalsChange, maxGoals = 6, visionType = 'custom' }
         ))}
       </div>
 
+      {/* Selected Goals Display (Custom/Non-Grid Goals) */}
+      {goals.filter(g => !availableGoals.some(ag => ag.title === g.title)).length > 0 && (
+        <div className="selected-goals-section">
+          <h4 className="selected-goals-title">Your Custom Goals</h4>
+          <div className="selected-goals-list">
+            {goals.filter(g => !availableGoals.some(ag => ag.title === g.title)).map((goal) => (
+              <div key={goal.id} className="selected-goal-item">
+                <span className="selected-goal-emoji">{goal.emoji}</span>
+                <div className="selected-goal-info">
+                  <span className="selected-goal-title">{goal.title}</span>
+                  {goal.description && (
+                    <span className="selected-goal-desc">{goal.description}</span>
+                  )}
+                </div>
+                <button
+                  className="remove-goal-btn"
+                  onClick={() => removeGoal(goal.id)}
+                  title="Remove goal"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Add Custom Goal Button */}
       {goals.length < maxGoals && (
         <>

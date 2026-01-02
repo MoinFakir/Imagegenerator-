@@ -86,11 +86,11 @@ app.post('/generate-image', async (req, res) => {
     console.log('Generating image with prompt:', prompt);
     console.log('Size:', size);
 
-    // Use Gemini 3.0 Pro for image generation
+    // Use Imagen 3.0 for image generation
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-image-preview",
+      model: "imagen-3.0-generate-001",
       generationConfig: {
-        responseModalities: ["image", "text"],
+        responseModalities: ["image"],
       }
     });
 
@@ -210,15 +210,29 @@ app.post('/generate-vision-quotes', async (req, res) => {
     const numGoals = goals?.length || 4;
     const numQuotes = Math.max(numGoals, 1); // At least 1 quote
 
-    // Create language-specific instructions
+    // Create language-specific instructions with stronger enforcement
     let languageInstructions = '';
+    let scriptInstructions = '';
+
     if (languages.length === 1) {
-      languageInstructions = `- Generate ALL ${numQuotes} quotes in ${languages[0]}.`;
+      const lang = languages[0];
+      languageInstructions = `- Generate ALL ${numQuotes} quotes EXCLUSIVELY in ${lang}. DO NOT use any other language.`;
+
+      // Add script-specific instructions
+      if (lang === 'Hindi') {
+        scriptInstructions = '- ALL quotes MUST be in Devanagari script (Hindi). NO English, NO Chinese, NO other languages.';
+      } else if (lang === 'Marathi') {
+        scriptInstructions = '- ALL quotes MUST be in Devanagari script (Marathi). NO English, NO Chinese, NO other languages.';
+      } else if (lang === 'English') {
+        scriptInstructions = '- ALL quotes MUST be in English using Latin alphabet. NO Hindi, NO Marathi, NO Chinese, NO other languages.';
+      }
     } else if (languages.length === 2) {
       const half = Math.ceil(numQuotes / 2);
-      languageInstructions = `- Generate approximately ${half} quotes in ${languages[0]} and ${numQuotes - half} quotes in ${languages[1]}.`;
+      languageInstructions = `- Generate approximately ${half} quotes in ${languages[0]} and ${numQuotes - half} quotes in ${languages[1]}. DO NOT use any other languages.`;
+      scriptInstructions = `- Use appropriate scripts: ${languages.includes('Hindi') || languages.includes('Marathi') ? 'Devanagari for Hindi/Marathi, ' : ''}Latin alphabet for English.`;
     } else if (languages.length === 3) {
-      languageInstructions = `- Distribute the ${numQuotes} quotes across ${langsString}, using each language at least once.`;
+      languageInstructions = `- Distribute the ${numQuotes} quotes across ${langsString}, using each language at least once. DO NOT use any languages outside this list.`;
+      scriptInstructions = '- Use appropriate scripts: Devanagari for Hindi/Marathi, Latin alphabet for English.';
     }
 
     // Generate quote keys dynamically
@@ -228,26 +242,52 @@ app.post('/generate-vision-quotes', async (req, res) => {
     }
     const jsonStructure = quoteKeys.map(key => `  "${key}": "Quote string"`).join(',\n');
 
-    const prompt = `Based on this person's vision and goals, generate ${numQuotes} short, powerful, inspirational quotes.
-    
+    const prompt = `You are generating inspirational quotes for a vision board. Follow these instructions EXACTLY.
+
 User's Vision:
 ${userVision}
 
 Goals: ${goalTitles}
 
-Requirements:
-- SELECTED LANGUAGES: ${langsString}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CRITICAL LANGUAGE REQUIREMENTS (MANDATORY) ⚠️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SELECTED LANGUAGE: ${langsString}
+
 ${languageInstructions}
-- Use Devanagari script for Hindi/Marathi quotes.
-- Return valid JSON format ONLY.
-- Each quote must be 3-8 words maximum.
-- Generate ${numQuotes} unique quotes that are motivational and relevant to the goals.
-- Each quote should be inspiring and actionable.
+${scriptInstructions}
+
+🚫 REJECTION CRITERIA - DO NOT GENERATE:
+${languages.includes('Marathi') ? '- ANY quotes in English (e.g., "CHOOSE JOY", "HAPPINESS BLOOMS", etc.)\n- ANY quotes in Hindi\n- ANY quotes in Chinese or other languages\n- ANY quotes using Latin alphabet (a-z, A-Z)' : ''}
+${languages.includes('Hindi') ? '- ANY quotes in English\n- ANY quotes in Marathi\n- ANY quotes in Chinese or other languages\n- ANY quotes using Latin alphabet (a-z, A-Z)' : ''}
+${languages.includes('English') ? '- ANY quotes in Hindi (Devanagari script)\n- ANY quotes in Marathi (Devanagari script)\n- ANY quotes in Chinese or other languages\n- ANY quotes using Devanagari script (देवनागरी)' : ''}
+
+✅ ACCEPTANCE CRITERIA - ONLY GENERATE:
+${languages.includes('Marathi') ? '- Quotes written ONLY in Marathi language\n- Using ONLY Devanagari script (मराठी)\n- Example VALID quotes: "स्वप्न पहा आणि साकार करा.", "यश तुमचे आहे.", "आनंद शोधा."' : ''}
+${languages.includes('Hindi') ? '- Quotes written ONLY in Hindi language\n- Using ONLY Devanagari script (हिंदी)\n- Example VALID quotes: "सपने देखो और पूरे करो.", "सफलता आपकी है.", "खुशी खोजो."' : ''}
+${languages.includes('English') ? '- Quotes written ONLY in English language\n- Using ONLY Latin alphabet (A-Z, a-z)\n- Example VALID quotes: "Dream big and achieve.", "Success is yours.", "Find happiness."' : ''}
+
+🔍 VALIDATION CHECKLIST (Check each quote):
+1. Is this quote in ${langsString}? If NO, REJECT it.
+2. Does this quote use the correct script? If NO, REJECT it.
+3. Does this quote contain ANY words from other languages? If YES, REJECT it.
+4. Generate a replacement quote that meets ALL criteria.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Format Requirements:
+- Return valid JSON format ONLY
+- Each quote: 3-8 words maximum
+- Generate ${numQuotes} unique quotes
+- All quotes must be motivational and relevant
 
 Required JSON Structure:
 {
 ${jsonStructure}
-}`;
+}
+
+FINAL REMINDER: Every single quote MUST be in ${langsString} ONLY. No exceptions.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -261,9 +301,45 @@ ${jsonStructure}
 
       // Convert to array
       quotes = Object.values(quotesObj).slice(0, numQuotes);
+
+      // POST-GENERATION VALIDATION: Filter quotes by language
+      console.log('Raw quotes before validation:', quotes);
+
+      const validatedQuotes = quotes.filter(quote => {
+        if (!quote || typeof quote !== 'string') return false;
+
+        // Check if quote matches the selected language
+        if (languages.length === 1) {
+          const lang = languages[0];
+
+          if (lang === 'English') {
+            // English should only contain Latin alphabet (a-z, A-Z)
+            const hasOnlyLatin = /^[a-zA-Z\s.,!?'-]+$/.test(quote);
+            const hasDevanagari = /[\u0900-\u097F]/.test(quote);
+            return hasOnlyLatin && !hasDevanagari;
+          } else if (lang === 'Hindi' || lang === 'Marathi') {
+            // Hindi/Marathi should contain Devanagari script
+            const hasDevanagari = /[\u0900-\u097F]/.test(quote);
+            const hasLatin = /[a-zA-Z]/.test(quote);
+            return hasDevanagari && !hasLatin;
+          }
+        }
+
+        return true; // For multiple languages, accept all
+      });
+
+      console.log('Validated quotes:', validatedQuotes);
+
+      // If validation removed too many quotes, use fallback
+      if (validatedQuotes.length < numQuotes / 2) {
+        console.warn(`Validation removed too many quotes. Using fallback for ${languages[0]}`);
+        throw new Error('Too many invalid quotes');
+      }
+
+      quotes = validatedQuotes;
     } catch (e) {
-      console.error("Failed to parse quotes JSON:", e);
-      // Fallback if JSON parsing fails
+      console.error("Failed to parse or validate quotes JSON:", e);
+      // Fallback if JSON parsing fails or validation fails
       quotes = text.split('\n').filter(q => q.length > 5).slice(0, numQuotes);
     }
 
@@ -274,13 +350,52 @@ ${jsonStructure}
   } catch (error) {
     console.error('Quote generation error:', error);
 
-    // Fallback categorized quotes
-    const fallbackQuotes = [
-      "Dream Big.",
-      "Stay Focused.",
-      "Enjoy the Journey.",
-      "Find Balance."
-    ];
+    // Language-specific fallback quotes
+    const fallbackQuotesByLanguage = {
+      English: [
+        "Dream Big.",
+        "Stay Focused.",
+        "Make It Happen.",
+        "Believe In Yourself.",
+        "Success Awaits.",
+        "Keep Moving Forward."
+      ],
+      Hindi: [
+        "बड़े सपने देखो।",
+        "केंद्रित रहो।",
+        "इसे साकार करो।",
+        "खुद पर विश्वास करो।",
+        "सफलता आपकी है।",
+        "आगे बढ़ते रहो।"
+      ],
+      Marathi: [
+        "मोठी स्वप्ने पहा.",
+        "लक्ष केंद्रित करा.",
+        "ते साकार करा.",
+        "स्वतःवर विश्वास ठेवा.",
+        "यश तुमचे आहे.",
+        "पुढे जात रहा."
+      ]
+    };
+
+    // Build fallback quotes based on selected languages
+    let fallbackQuotes = [];
+    const numGoals = req.body.goals?.length || 4;
+
+    if (languages.length === 1) {
+      // Single language - use only that language
+      const lang = languages[0];
+      fallbackQuotes = fallbackQuotesByLanguage[lang] || fallbackQuotesByLanguage.English;
+      fallbackQuotes = fallbackQuotes.slice(0, numGoals);
+    } else {
+      // Multiple languages - distribute evenly
+      const quotesPerLang = Math.ceil(numGoals / languages.length);
+      languages.forEach(lang => {
+        const langQuotes = fallbackQuotesByLanguage[lang] || fallbackQuotesByLanguage.English;
+        fallbackQuotes.push(...langQuotes.slice(0, quotesPerLang));
+      });
+      fallbackQuotes = fallbackQuotes.slice(0, numGoals);
+    }
 
     res.status(500).json({
       success: false,

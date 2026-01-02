@@ -395,7 +395,14 @@ const SIZE_MAP = {
  * @returns {string} - Detailed prompt for image generation
  */
 export function generateVisionBoardPrompt(data) {
-  const themeText = THEME_MAP[data.theme] || data.theme
+  // Use custom vision text if theme is 'typevision', otherwise use THEME_MAP
+  let themeText;
+  if (data.theme === 'typevision' && data.customVisionText) {
+    themeText = data.customVisionText;
+  } else {
+    themeText = THEME_MAP[data.theme] || data.theme;
+  }
+
   const goalsText = data.goals.map(g => {
     // If g is an object, use its title or fallback to id
     const key = typeof g === 'object' ? (g.title || g.id) : g
@@ -428,9 +435,16 @@ export function generateVisionBoardPrompt(data) {
   // Add goal-based panels with quotes
   data.goals.forEach((goal, index) => {
     const goalText = typeof goal === 'object' ? (goal.title || goal.id) : goal;
+    const goalDescription = typeof goal === 'object' && goal.description ? goal.description : '';
     const quote = quotes[index] || "";
     const panelNum = index + 2;
-    panels.push(`${panelNum}. ${goalText}: Professional imagery. ${quote ? `Overlay text: "${quote}"` : ""}`);
+
+    // Include description for more context in image generation
+    const panelDescription = goalDescription
+      ? `${goalText} (${goalDescription}): Professional imagery showing ${goalDescription}.`
+      : `${goalText}: Professional imagery.`;
+
+    panels.push(`${panelNum}. ${panelDescription} ${quote ? `Overlay text: "${quote}"` : ""}`);
   });
 
   // Add timeline panel at the end
@@ -439,7 +453,7 @@ export function generateVisionBoardPrompt(data) {
 
   // Determine color scheme based on theme
   let colorScheme = ""
-  if (data.theme === "wealth" || data.theme === "business") {
+  if (data.theme === "wealth" || data.theme === "business" || data.theme === "money") {
     colorScheme = "Luxurious color palette: deep blacks, rich golds, warm browns, elegant whites"
   } else if (data.theme === "career") {
     colorScheme = "Professional color palette: clean whites, corporate blues, modern grays, accent golds"

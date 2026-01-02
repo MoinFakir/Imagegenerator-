@@ -93,6 +93,7 @@ function App() {
       // Prepare data for prompt generation including the quote
       const visionData = {
         theme: formData.visionType,
+        customVisionText: formData.customVisionText, // Add custom vision text
         goals: formData.goals, // Pass full goal objects
         timeline: formData.timeline,
         boardSize: imageSize,

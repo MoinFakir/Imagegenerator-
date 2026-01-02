@@ -128,3 +128,6 @@ $RECYCLE.BIN/
 *.njsproj
 *.sln
 *.sw?
+
+.env
+.server
