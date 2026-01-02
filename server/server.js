@@ -16,17 +16,7 @@ if (debugKey) {
 console.log('------------------------');
 
 const app = express();
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://imagegenerator-sigma-three.vercel.app',
-    '*' // Allow all as a fallback for now
-  ],
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+app.use(cors()); // Allows your frontend to talk to this backend
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -96,9 +86,9 @@ app.post('/generate-image', async (req, res) => {
     console.log('Generating image with prompt:', prompt);
     console.log('Size:', size);
 
-    // Use Imagen 3.0 for image generation (Google's dedicated image model)
+    // Use Gemini 2.5 Flash Image for image generation
     const model = genAI.getGenerativeModel({
-      model: "imagen-3.0-generate-001",
+      model: "gemini-2.5-flash-image",
       generationConfig: {
         responseModalities: ["image"],
       }
@@ -109,7 +99,7 @@ app.post('/generate-image', async (req, res) => {
       ? 'Create a vertical/portrait oriented image suitable for a phone wallpaper.'
       : 'Create a horizontal/landscape oriented image suitable for a desktop wallpaper.';
 
-    const fullPrompt = `${prompt}\n\n${sizeGuide}`;
+    const fullPrompt = `Generate an image of ${prompt}\n\n${sizeGuide}`;
 
     const result = await model.generateContent(fullPrompt);
     const response = await result.response;
@@ -125,7 +115,7 @@ app.post('/generate-image', async (req, res) => {
         mimeType: imageData.inlineData.mimeType || 'image/png'
       });
     } else {
-      // If no image, return the text response (or error)
+      // If no image, return the text response
       const textPart = parts.find(p => p.text);
       res.status(400).json({
         success: false,
@@ -150,7 +140,7 @@ app.post('/generate-quotes', async (req, res) => {
     console.log('Goals:', goals);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash"
+      model: "gemini-2.0-flash-exp"
     });
 
     const goalTitles = goals?.map(g => g.title).filter(t => t).join(', ') || 'success and happiness';
@@ -391,8 +381,6 @@ FINAL REMINDER: Every single quote MUST be in ${langsString} ONLY. No exceptions
     // Build fallback quotes based on selected languages
     let fallbackQuotes = [];
     const numGoals = req.body.goals?.length || 4;
-    // ensure languages is defined in failure case
-    const languages = Array.isArray(req.body.language) ? req.body.language : [req.body.language || 'English'];
 
     if (languages.length === 1) {
       // Single language - use only that language
