@@ -86,9 +86,9 @@ app.post('/generate-image', async (req, res) => {
     console.log('Generating image with prompt:', prompt);
     console.log('Size:', size);
 
-    // Use Imagen 3.0 for image generation
+    // Use Gemini 2.0 Flash for image generation (supports image generation)
     const model = genAI.getGenerativeModel({
-      model: "imagen-3.0-generate-001",
+      model: "gemini-2.0-flash-exp",
       generationConfig: {
         responseModalities: ["image"],
       }
@@ -140,7 +140,7 @@ app.post('/generate-quotes', async (req, res) => {
     console.log('Goals:', goals);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp"
+      model: "gemini-1.5-flash"
     });
 
     const goalTitles = goals?.map(g => g.title).filter(t => t).join(', ') || 'success and happiness';

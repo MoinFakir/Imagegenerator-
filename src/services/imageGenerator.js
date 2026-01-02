@@ -4,11 +4,13 @@
  * @param {string} size - 'desktop' or 'mobile'
  * @returns {Promise<string>} - The generated image as a data URL
  */
+const API_BASE_URL = 'https://image-generator-154m.onrender.com'
+
 export async function generateVisionBoardImage(prompt, size = 'desktop') {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'
+  // Uses global API_BASE_URL defined at file scope
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-image`, {
+    const response = await fetch(`${API_BASE_URL}/generate-image`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -150,10 +152,10 @@ export async function generateQuotes(visionType, goals) {
  * @returns {Promise<Array>} - Array of question strings
  */
 export async function generateQuestions(visionType, goals) {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'
+  // Uses global API_BASE_URL defined at file scope
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-questions`, {
+    const response = await fetch(`${API_BASE_URL}/generate-questions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -498,14 +500,14 @@ Flat 2D composition, high fidelity digital graphic design.
  * @returns {Promise<string[]>} - Array of quote strings
  */
 export async function generateVisionBoardQuote(userVision, theme, languages = ['English']) {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'
+  // Uses global API_BASE_URL defined at file scope
   const fallbackQuote = "Dream it. Believe it. Achieve it."
 
   // Ensure languages is an array
   const langArray = Array.isArray(languages) ? languages : [languages]
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-vision-quotes`, {
+    const response = await fetch(`${API_BASE_URL}/generate-vision-quotes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
