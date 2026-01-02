@@ -16,7 +16,17 @@ if (debugKey) {
 console.log('------------------------');
 
 const app = express();
-app.use(cors()); // Allows your frontend to talk to this backend
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://imagegenerator-sigma-three.vercel.app',
+    '*' // Allow all as a fallback for now
+  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -86,9 +96,9 @@ app.post('/generate-image', async (req, res) => {
     console.log('Generating image with prompt:', prompt);
     console.log('Size:', size);
 
-    // Use Gemini 2.0 Flash for image generation (supports image generation)
+    // Use Imagen 3.0 for image generation (Google's dedicated image model)
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "imagen-3.0-generate-001",
       generationConfig: {
         responseModalities: ["image"],
       }
@@ -115,7 +125,7 @@ app.post('/generate-image', async (req, res) => {
         mimeType: imageData.inlineData.mimeType || 'image/png'
       });
     } else {
-      // If no image, return the text response
+      // If no image, return the text response (or error)
       const textPart = parts.find(p => p.text);
       res.status(400).json({
         success: false,
@@ -381,6 +391,8 @@ FINAL REMINDER: Every single quote MUST be in ${langsString} ONLY. No exceptions
     // Build fallback quotes based on selected languages
     let fallbackQuotes = [];
     const numGoals = req.body.goals?.length || 4;
+    // ensure languages is defined in failure case
+    const languages = Array.isArray(req.body.language) ? req.body.language : [req.body.language || 'English'];
 
     if (languages.length === 1) {
       // Single language - use only that language

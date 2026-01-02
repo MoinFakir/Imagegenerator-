@@ -4,7 +4,7 @@
  * @param {string} size - 'desktop' or 'mobile'
  * @returns {Promise<string>} - The generated image as a data URL
  */
-const API_BASE_URL = 'https://image-generator-154m.onrender.com'
+const API_BASE_URL = 'http://localhost:3002'
 
 export async function generateVisionBoardImage(prompt, size = 'desktop') {
   // Uses global API_BASE_URL defined at file scope
@@ -104,7 +104,7 @@ export async function generateImagesParallel(goalPrompts, onProgress = () => { }
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateQuotes(visionType, goals) {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'
+  const PROXY_URL = 'http://localhost:3002'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-quotes`, {
@@ -196,7 +196,7 @@ export async function generateQuestions(visionType, goals) {
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateVisionQuotes(userVision, goals) {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'
+  const PROXY_URL = 'http://localhost:3002'
 
   try {
     const response = await fetch(`${PROXY_URL}/generate-vision-quotes`, {
@@ -240,7 +240,7 @@ export async function generateVisionQuotes(userVision, goals) {
  * @returns {Promise<Object>} - Object mapping goalId to quote string
  */
 export async function generateIndividualQuotes(goals, userVision, visionType) {
-  const PROXY_URL = 'https://image-generator-154m.onrender.com'  // Use local server
+  const PROXY_URL = 'http://localhost:3002'  // Use local server
   console.log('🎯 Calling local server to generate individual quotes...')
 
   try {
