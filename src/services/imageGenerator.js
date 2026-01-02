@@ -4,7 +4,7 @@
  * @param {string} size - 'desktop' or 'mobile'
  * @returns {Promise<string>} - The generated image as a data URL
  */
-const API_BASE_URL = 'http://localhost:3002'
+const API_BASE_URL = 'https://image-generator-154m.onrender.com'
 
 export async function generateVisionBoardImage(prompt, size = 'desktop') {
   // Uses global API_BASE_URL defined at file scope
@@ -104,10 +104,10 @@ export async function generateImagesParallel(goalPrompts, onProgress = () => { }
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateQuotes(visionType, goals) {
-  const PROXY_URL = 'http://localhost:3002'
+  // Uses global API_BASE_URL defined at file scope
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-quotes`, {
+    const response = await fetch(`${API_BASE_URL}/generate-quotes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -196,10 +196,10 @@ export async function generateQuestions(visionType, goals) {
  * @returns {Promise<Array>} - Array of quote strings
  */
 export async function generateVisionQuotes(userVision, goals) {
-  const PROXY_URL = 'http://localhost:3002'
+  // Uses global API_BASE_URL defined at file scope
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-vision-quotes`, {
+    const response = await fetch(`${API_BASE_URL}/generate-vision-quotes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -240,11 +240,11 @@ export async function generateVisionQuotes(userVision, goals) {
  * @returns {Promise<Object>} - Object mapping goalId to quote string
  */
 export async function generateIndividualQuotes(goals, userVision, visionType) {
-  const PROXY_URL = 'http://localhost:3002'  // Use local server
-  console.log('🎯 Calling local server to generate individual quotes...')
+  // Uses global API_BASE_URL defined at file scope
+  console.log('🎯 Calling server to generate individual quotes...')
 
   try {
-    const response = await fetch(`${PROXY_URL}/generate-individual-quotes`, {
+    const response = await fetch(`${API_BASE_URL}/generate-individual-quotes`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
